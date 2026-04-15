@@ -5,7 +5,7 @@ export interface Question {
   correctIndex: number;
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  source: 'api' | 'ai';
+  source: 'api' | 'ai' | 'local';
 }
 
 export interface Player {

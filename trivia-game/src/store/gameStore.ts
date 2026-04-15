@@ -1,11 +1,16 @@
 import { create } from 'zustand';
-import type { GameState, GamePhase, Player, Question } from '../types';
+import type { GameState, GamePhase, Question } from '../types';
+
+export type QuestionSource = 'otdb' | 'local';
 
 interface GameStore extends GameState {
+  questionSource: QuestionSource;
+
   // Setup actions
   addPlayer: (name: string) => void;
   removePlayer: (id: string) => void;
   setTotalRounds: (rounds: number) => void;
+  setQuestionSource: (source: QuestionSource) => void;
 
   // State machine transitions
   setPhase: (phase: GamePhase) => void;
@@ -34,6 +39,7 @@ const initialState: GameState = {
 
 export const useGameStore = create<GameStore>((set, get) => ({
   ...initialState,
+  questionSource: 'otdb',
 
   addPlayer: (name) => {
     const id = crypto.randomUUID();
@@ -55,6 +61,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setTotalRounds: (rounds) => set({ totalRounds: rounds }),
+
+  setQuestionSource: (source) => set({ questionSource: source }),
 
   setPhase: (phase) => set({ phase }),
 

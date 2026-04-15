@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { fetchOtdbCategories, fetchQuestions, type OtdbCategory } from '../../services/questionEngine';
+import { getLocalCategories, fetchLocalQuestions } from '../../services/localQuestionService';
 
 export default function CategoryPickScreen() {
-  const { players, currentPlayerIndex, totalRounds, roundNumber, loadQuestions } = useGameStore();
-  const [categories, setCategories] = useState<OtdbCategory[]>([]);
+  const { players, currentPlayerIndex, totalRounds, roundNumber, questionSource, loadQuestions } = useGameStore();
+  const [otdbCategories, setOtdbCategories] = useState<OtdbCategory[]>([]);
+  const [localCategories, setLocalCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState('');
@@ -12,13 +14,22 @@ export default function CategoryPickScreen() {
   const activePlayer = players[currentPlayerIndex];
 
   useEffect(() => {
-    fetchOtdbCategories()
-      .then(setCategories)
-      .catch(() => setError('Failed to load categories. Check your connection.'))
-      .finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    setError('');
+    if (questionSource === 'local') {
+      getLocalCategories()
+        .then(setLocalCategories)
+        .catch(() => setError('Failed to load local question bank.'))
+        .finally(() => setLoading(false));
+    } else {
+      fetchOtdbCategories()
+        .then(setOtdbCategories)
+        .catch(() => setError('Failed to load categories. Check your connection.'))
+        .finally(() => setLoading(false));
+    }
+  }, [questionSource]);
 
-  async function handlePick(cat: OtdbCategory) {
+  async function handlePickOtdb(cat: OtdbCategory) {
     setFetching(true);
     setError('');
     try {
@@ -26,6 +37,18 @@ export default function CategoryPickScreen() {
       loadQuestions(questions);
     } catch {
       setError('Failed to fetch questions. Try another category.');
+      setFetching(false);
+    }
+  }
+
+  async function handlePickLocal(category: string) {
+    setFetching(true);
+    setError('');
+    try {
+      const questions = await fetchLocalQuestions(category, 1);
+      loadQuestions(questions);
+    } catch {
+      setError('Failed to load questions. Try another category.');
       setFetching(false);
     }
   }
@@ -46,13 +69,25 @@ export default function CategoryPickScreen() {
         <p className="text-gray-400 text-xl mt-16">Loading categories...</p>
       ) : fetching ? (
         <p className="text-gray-400 text-xl mt-16">Loading question...</p>
+      ) : questionSource === 'local' ? (
+        <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-3 gap-3">
+          {localCategories.map((cat) => (
+            <button
+              key={cat}
+              className="bg-gray-800 hover:bg-indigo-700 text-white text-lg font-medium px-5 py-4 rounded-xl text-left transition-colors"
+              onClick={() => handlePickLocal(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       ) : (
         <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-3 gap-3">
-          {categories.map((cat) => (
+          {otdbCategories.map((cat) => (
             <button
               key={cat.id}
               className="bg-gray-800 hover:bg-indigo-700 text-white text-lg font-medium px-5 py-4 rounded-xl text-left transition-colors"
-              onClick={() => handlePick(cat)}
+              onClick={() => handlePickOtdb(cat)}
             >
               {cat.name}
             </button>

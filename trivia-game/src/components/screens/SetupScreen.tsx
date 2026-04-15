@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useGameStore } from '../../store/gameStore';
+import { useGameStore, type QuestionSource } from '../../store/gameStore';
 
 export default function SetupScreen() {
-  const { players, totalRounds, addPlayer, removePlayer, setTotalRounds, startGame } = useGameStore();
+  const { players, totalRounds, questionSource, addPlayer, removePlayer, setTotalRounds, setQuestionSource, startGame } = useGameStore();
   const [nameInput, setNameInput] = useState('');
 
   function handleAddPlayer() {
@@ -80,6 +80,29 @@ export default function SetupScreen() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Question Source */}
+      <div className="w-full max-w-lg flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold text-gray-300">Question Source</h2>
+        <div className="flex gap-3">
+          {([['otdb', 'Online (Open Trivia DB)'], ['local', 'Offline (Local Trivia)']] as [QuestionSource, string][]).map(([val, label]) => (
+            <button
+              key={val}
+              className={`flex-1 py-3 rounded-xl text-lg font-semibold transition-colors ${
+                questionSource === val
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+              onClick={() => setQuestionSource(val)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {questionSource === 'local' && (
+          <p className="text-gray-500 text-sm">45,000+ questions from the local trivia bank — no internet needed.</p>
+        )}
       </div>
 
       {/* Start */}

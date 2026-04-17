@@ -1,20 +1,37 @@
 import type { Question } from '../types';
 
-interface RawQuestion {
+interface RawTriviaQuestion {
   id: string;
   category: string;
   question: string;
   answer: string;
 }
 
-let cache: RawQuestion[] | null = null;
+interface RawFamilyFeudQuestion {
+  id: string;
+  category: 'Family Feud';
+  question: string;
+  answers: string[];
+  correctIndex: number;
+}
 
-async function loadAll(): Promise<RawQuestion[]> {
-  if (cache) return cache;
+let triviaCache: RawTriviaQuestion[] | null = null;
+let familyFeudCache: RawFamilyFeudQuestion[] | null = null;
+
+async function loadTrivia(): Promise<RawTriviaQuestion[]> {
+  if (triviaCache) return triviaCache;
   const res = await fetch('/trivia-questions.json');
-  if (!res.ok) throw new Error('Failed to load local question bank');
-  cache = await res.json() as RawQuestion[];
-  return cache;
+  if (!res.ok) throw new Error('Failed to load local trivia bank');
+  triviaCache = await res.json() as RawTriviaQuestion[];
+  return triviaCache;
+}
+
+async function loadFamilyFeud(): Promise<RawFamilyFeudQuestion[]> {
+  if (familyFeudCache) return familyFeudCache;
+  const res = await fetch('/family-feud-questions.json');
+  if (!res.ok) throw new Error('Failed to load Family Feud question bank');
+  familyFeudCache = await res.json() as RawFamilyFeudQuestion[];
+  return familyFeudCache;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -27,13 +44,30 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export async function getLocalCategories(): Promise<string[]> {
-  const all = await loadAll();
-  const cats = new Set(all.map((q) => q.category));
+  const [trivia, ff] = await Promise.all([loadTrivia(), loadFamilyFeud()]);
+  const cats = new Set([
+    ...trivia.map((q) => q.category),
+    ...ff.map((q) => q.category),
+  ]);
   return [...cats].sort();
 }
 
 export async function fetchLocalQuestions(category: string, amount: number): Promise<Question[]> {
-  const all = await loadAll();
+  if (category === 'Family Feud') {
+    const all = await loadFamilyFeud();
+    if (all.length < amount) throw new Error('Not enough Family Feud questions');
+    return shuffle(all).slice(0, amount).map((q) => ({
+      id: `ff-${q.id}`,
+      question: q.question,
+      answers: q.answers,
+      correctIndex: q.correctIndex,
+      category: q.category,
+      difficulty: 'medium' as const,
+      source: 'local' as const,
+    }));
+  }
+
+  const all = await loadTrivia();
   const pool = all.filter((q) => q.category === category);
   if (pool.length < 4) throw new Error(`Not enough questions in category: ${category}`);
 

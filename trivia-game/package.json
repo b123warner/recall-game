@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "parse-trivia": "node scripts/parse-trivia.mjs"
+    "parse-trivia": "node scripts/parse-trivia.mjs",
+    "parse-family-feud": "node scripts/parse-family-feud.mjs",
+    "parse-all": "node scripts/parse-trivia.mjs && node scripts/parse-family-feud.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.89.0",
